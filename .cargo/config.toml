@@ -1,0 +1,3 @@
+# Tests and `cargo run` must not call GitHub for the update notice.
+[env]
+MIGRATE_DB_NO_UPDATE_CHECK = "1"

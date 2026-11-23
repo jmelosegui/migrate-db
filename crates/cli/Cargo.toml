@@ -1,0 +1,38 @@
+[package]
+name = "migrate-db"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
+clap = { version = "4.6.7", features = ["derive", "env"] }
+migrate-db-core = { version = "0.1.0", path = "../core" }
+migrate-db-mssql = { version = "0.1.0", path = "../provider-mssql", optional = true }
+migrate-db-postgres = { version = "0.1.0", path = "../provider-postgres", optional = true }
+semver = "1.0.28"
+serde = "1.0.229"
+serde_json = "1.0.154"
+tokio = { version = "1.54.1", features = ["macros", "rt", "signal", "time"] }
+# update notice: GitHub releases lookup. native-tls matches the SQL Server driver, so no second TLS stack.
+ureq = { version = "3", default-features = false, features = ["native-tls"] }
+# init: correct TOML string escaping in the generated config.
+toml = "1.2.1"
+
+[dev-dependencies]
+assert_cmd = "2.2.2"
+predicates = "3.1.4"
+tempfile = "3.27.0"
+
+[features]
+default = ["mssql", "postgres"]
+# Providers compiled into the binary (ARCHITECTURE §1).
+mssql = ["dep:migrate-db-mssql"]
+postgres = ["dep:migrate-db-postgres"]
+# CLI end-to-end tests against real databases (need MIGRATE_DB_TEST_POSTGRES / MIGRATE_DB_TEST_MSSQL).
+integration = []
