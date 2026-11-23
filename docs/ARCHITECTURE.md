@@ -7,11 +7,11 @@ migrate-db/
   Cargo.toml                      # [workspace]
   crates/
     core/                         # migrate-db-core: engine, model, planner, checksum, discovery, config
-    provider-postgres/            # migrate-db-postgres
-    provider-mssql/               # migrate-db-mssql
-    provider-mongo/               # migrate-db-mongo
-    provider-cosmos/              # migrate-db-cosmos
-    provider-memory/              # in-memory provider for engine tests (not shipped)
+    providers/postgres/            # migrate-db-postgres
+    providers/mssql/               # migrate-db-mssql
+    providers/mongo/               # migrate-db-mongo
+    providers/cosmos/              # migrate-db-cosmos
+    providers/memory/              # in-memory provider for engine tests (not shipped)
     conformance/                  # shared provider test-suite (dev-dependency)
     cli/                          # migrate-db binary (clap)
   docs/
@@ -174,7 +174,7 @@ Notes:
 ## 6. Testing strategy
 
 1. **Planner unit tests** (pure, fast): every reconciliation rule and every up/down/to/steps combination. Use table-driven and property tests (`proptest`), for example checking that `up` followed by `down --to 0` always gives back an empty ledger.
-2. **Engine tests** run against `provider-memory`, including injected failures, lock contention and cancellation.
+2. **Engine tests** run against `providers/memory`, including injected failures, lock contention and cancellation.
 3. **Provider conformance suite** (`crates/conformance`): one generic test suite that every provider must pass. It covers the ledger lifecycle, read-only operations creating nothing, lock exclusivity across two connections, the holder record and stale detection, lock-wait reporting, `force_unlock` (including never killing an unverified session), atomic rollback, failed-state handling, repeatables and cancellation. A provider test crate implements `Harness` (connect to an isolated target, a handful of dialect snippets, an independent assertion connection) and expands `conformance_tests!`, which generates one test per case. Each provider crate runs it against a real database in a container (`tests/conformance.rs`, `--features integration`). Dialect specifics stay in the provider's own integration tests.
 4. **Integration containers:** `postgres:17`, `mcr.microsoft.com/mssql/server:2022-latest`, `mongo:8` as a single-node replica set (needed for transactions), and the Cosmos DB Linux emulator (vNext). The emulator has gaps, so Cosmos tests also have an opt-in job against a real dev account.
 5. **CLI tests:** `assert_cmd` plus `insta` snapshots of text and JSON output.

@@ -1,6 +1,6 @@
 //! End-to-end CLI flow against a real SQL Server (SPEC §10.1 plan → apply).
 //! Run: `MIGRATE_DB_TEST_MSSQL=… cargo test -p migrate-db --features integration`
-//! (see `crates/provider-mssql/tests/integration.rs` for the container setup).
+//! (see `crates/providers/mssql/tests/integration.rs` for the container setup).
 #![cfg(all(feature = "integration", feature = "mssql"))]
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)] // test code
 

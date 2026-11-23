@@ -20,13 +20,13 @@ Goal: answer the open questions and remove driver risk before writing the engine
 
 ## Phase 1: Core engine, CLI and SQL Server (MVP)
 
-**Reordered (2026-11-17).** SQL Server is the first production provider, because most databases that will adopt the tool are SQL Server / Azure SQL ([ADR-0002](decisions/0002-replace-dacfx-with-versioned-migrations.md)). PostgreSQL was built first to prove the engine. It stays working and tested, but the rest of its work moves to Phase 2. The Phase 0 MSSQL spike blocks `provider-mssql`.
+**Reordered (2026-11-17).** SQL Server is the first production provider, because most databases that will adopt the tool are SQL Server / Azure SQL ([ADR-0002](decisions/0002-replace-dacfx-with-versioned-migrations.md)). PostgreSQL was built first to prove the engine. It stays working and tested, but the rest of its work moves to Phase 2. The Phase 0 MSSQL spike blocks `providers/mssql`.
 
 - [x] `core`: model, file discovery and naming, directives, checksum normalization, config loading with `${env:}`, config discovery up to the repo root (SPEC §5.1). *Still open: `MIGRATE_DB__…` env-var overrides of config keys.*
 - [x] `core::planner`: pure planning and reconciliation, with full unit and property tests (versioned migrations; repeatables and §6.5 recovery come in their phases).
 - [x] `core::engine`: pipeline, observer events, error-to-exit-code mapping. Ctrl-C / SIGTERM cancellation (§7 rule 7) interrupts the running statement on SQL Server and Postgres and exits 4; a connection error mid-run is reported like a script error, listing the steps that committed (exit 5).
-- [x] `provider-memory` with engine tests.
-- [x] `provider-mssql`: `GO` batch splitter (with tests covering strings, comments, `GO n`), transactional execute with `XACT_ABORT`, `sp_getapplock` lock, §6.1 ledger DDL (`ledger_schema_version = 1`), no-transaction directive, timeouts. Also fails closed when a script ends the provider's transaction (commit marker, PROVIDERS.md). `GO` lines are checked offline by `prepare` (`validate --offline`, and before any step of `up`/`--dry-run`). sqlcmd-only syntax (`:setvar`, `:r`, `:on error`, `$(var)`, `!!`) is rejected the same way.
+- [x] `providers/memory` with engine tests.
+- [x] `providers/mssql`: `GO` batch splitter (with tests covering strings, comments, `GO n`), transactional execute with `XACT_ABORT`, `sp_getapplock` lock, §6.1 ledger DDL (`ledger_schema_version = 1`), no-transaction directive, timeouts. Also fails closed when a script ends the provider's transaction (commit marker, PROVIDERS.md). `GO` lines are checked offline by `prepare` (`validate --offline`, and before any step of `up`/`--dry-run`). sqlcmd-only syntax (`:setvar`, `:r`, `:on error`, `$(var)`, `!!`) is rejected the same way.
 - [x] MSSQL auth: SQL login and Entra (CLI, managed identity, workload identity, client secret) through one credential chain on `azure_identity` 1.0. Manual and opt-in (`MIGRATE_DB_TEST_AZURE_SQL`) checks pass against a dev Azure SQL with `az login` (2026-11-18). *Still open: verify managed and workload identity on a real pipeline agent.*
 - [x] Shared `conformance` crate, run against the `mssql/server:2022` container and the existing Postgres provider. *Landed 2026-11-19: 11 contract cases, passing on both (`cargo test -p migrate-db-mssql --features integration --test conformance`, same for Postgres).*
 - [x] Lock visibility (SPEC §7 rule 10): `LockHolder` record with CI run reference, `lock_status()` held test, stale-record detection, logging the holder while waiting, `unlock --force [--kill-holder]`. The conformance suite asserts these for every provider. *Done (2026-11-18) for SQL Server and Postgres: the holder record in `__migrations_meta` (written after acquiring, removed on release), `lock_status()` with stale detection (`APPLOCK_TEST` / `pg_locks`), the `lock` object in `status`, and the holder named on lock timeout. Done (2026-11-19): the engine waits in 15 s slices and logs the holder between them (provider-independent); `unlock --force [--kill-holder]` with verify-before-kill, exact-record deletes and a `force-unlock` history event. The conformance suite asserts all of it for both providers (2026-11-19).*
@@ -34,7 +34,7 @@ Goal: answer the open questions and remove driver risk before writing the engine
 - [x] Guided `init` (SPEC §5.2): prompts with a flag for each one, the non-interactive rules, read-only detection of existing tooling, extend mode (append-only, verified by parsing), `validate --offline` at the end, and an optional read-only connection test. SQL Server and Postgres only. Questions for other providers are added in their phases. The pipeline-template option arrives in Phase 5. *Interactive prompts are tested by hand only (no TTY in CI tests).*
 - [x] Pipeline support (SPEC §10): `plan_fingerprint` + `--expect-plan`, `--output-file`, CI detection with non-interactive `--yes` rules, `--ci` to force CI mode locally, explicit `--env-file` (§10.0). *Still open: `--log-format auto|azure-pipelines|github`.*
 - [x] Integration tests against a real SQL Server (`mssql/server:2022` container, `--features integration`), including the CLI end-to-end plan → approve → apply flow. *Still open: `insta` snapshot tests of text output.*
-- [x] Engine proven on PostgreSQL first: `provider-postgres` with the full §6.1 ledger, advisory lock with holder on timeout, transactional execute, no-transaction directive, timeouts, and integration tests (Podman) including the CLI end-to-end flow. The remaining Postgres work is in Phase 2.
+- [x] Engine proven on PostgreSQL first: `providers/postgres` with the full §6.1 ledger, advisory lock with holder on timeout, transactional execute, no-transaction directive, timeouts, and integration tests (Podman) including the CLI end-to-end flow. The remaining Postgres work is in Phase 2.
 
 **Exit:** on a real SQL Server (the container, plus a manual check on Azure SQL with Entra), `new → up → status → down → up` works. Two concurrent `up` runs serialize. An edited applied script fails `validate` with exit code 2. A failing migration rolls back cleanly.
 
@@ -50,7 +50,7 @@ Goal: answer the open questions and remove driver risk before writing the engine
   - native fingerprints for both;
   - `mark` verifies the fingerprint before writing.
   - *`mark` landed 2026-11-22 without the fingerprint check: empty-ledger rule, baseline row with the file's checksum, `--mark-repeatables`, `--dry-run` / `--expect-plan`, `--yes` in CI, a `baseline` history event per row, all rows in one transaction (`Provider::mark`, conformance case `baseline_mark_writes_rows_and_executes_nothing`, passing on SQL Server and Postgres). Until capture/compare exist it requires `--force-unverified` (exit 2 otherwise).*
-- [ ] `provider-postgres` completion: ~~TLS (rustls)~~ (done 2026-11-22: rustls with certificate and host name verification against the Mozilla roots plus the OS store, for connections and cancel requests; `sslmode` keeps its driver meaning; checked against an Azure Flexible Server, which refuses plain text), Entra tokens for Azure Flexible Server (*an access token already works as the password; the automatic credential chain is still open*), the one-statement check for no-transaction files, and passing the conformance suite (*three cancel and lock-holder cases fail locally with or without TLS; to investigate*).
+- [ ] `providers/postgres` completion: ~~TLS (rustls)~~ (done 2026-11-22: rustls with certificate and host name verification against the Mozilla roots plus the OS store, for connections and cancel requests; `sslmode` keeps its driver meaning; checked against an Azure Flexible Server, which refuses plain text), Entra tokens for Azure Flexible Server (*an access token already works as the password; the automatic credential chain is still open*), the one-statement check for no-transaction files, and passing the conformance suite (*three cancel and lock-holder cases fail locally with or without TLS; to investigate*).
 
 **Exit:**
 - The tool can baseline an existing SQL database and apply new migrations to it from a pipeline using a managed identity.
@@ -60,13 +60,13 @@ Goal: answer the open questions and remove driver risk before writing the engine
 
 - [ ] `core::runner`: binary discovery and version check, credential passing through env or temp file, timeout with process-tree kill, output capture and redaction. Tested against a fake runner binary.
 - [ ] `StepGuarantees` reported in `status`, `--dry-run` and the JSON output. `executor` and `runner_version` columns in the ledger.
-- [ ] `provider-mongo`:
+- [ ] `providers/mongo`:
   - `.js` files through the **mongosh runner**, with `.js` syntax checks in `validate`.
   - `.yaml` / `.json` runCommand files through the **native executor**, with schema validation in `prepare`.
 - [ ] Lease lock with heartbeat, ledger collections, optional transaction mode for native files.
 - [ ] Mongo `baseline capture` / fingerprint (SPEC §6.6): collections, validators and indexes as native YAML.
 - [ ] Operation-level progress and recovery (SPEC §6.5) for native YAML/JSON files: per-command checkpoints, the `recovery` policies, the checksum and direction guards, and resume in `--dry-run` and `plan_fingerprint`. The planner's recovery logic is unit-tested in `core`, and the conformance suite kills a run mid-file and asserts the resume.
-- [ ] **sqlcmd executor** for `provider-mssql`: generated transactional wrapper, outcome verified from the ledger, the `-- migrate:executor` directive. It reuses `core::runner`, which is why it lands here and not in Phase 2.
+- [ ] **sqlcmd executor** for `providers/mssql`: generated transactional wrapper, outcome verified from the ledger, the `-- migrate:executor` directive. It reuses `core::runner`, which is why it lands here and not in Phase 2.
 - [ ] Conformance suite against a `mongo:8` single-node replica set, for both Mongo executors and the sqlcmd executor.
 - [ ] Document the Cosmos DB for MongoDB (RU/vCore) compatibility notes.
 
@@ -74,7 +74,7 @@ Goal: answer the open questions and remove driver risk before writing the engine
 
 ## Phase 4: Cosmos DB (NoSQL API)
 
-- [ ] `provider-cosmos`: internal client adapter, operation set from PROVIDERS.md, ETag lease lock, ledger container.
+- [ ] `providers/cosmos`: internal client adapter, operation set from PROVIDERS.md, ETag lease lock, ledger container.
 - [ ] Control-plane routing (data plane under key auth, ARM under Entra).
 - [ ] Data-transform operations with per-partition batching, 429 back-off and progress reporting.
 - [ ] Operation-level checkpoints and `recovery` policies (SPEC §6.5), reusing the Phase 3 engine support.

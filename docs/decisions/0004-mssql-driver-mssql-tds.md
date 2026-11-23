@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (2026-11-17), after the container spike and an Azure SQL + Entra check (see "Azure SQL results").
 - **Date:** 2026-11-17
-- **Applies to:** `provider-mssql` (native executor).
+- **Applies to:** `providers/mssql` (native executor).
 
 ## Context
 
@@ -34,7 +34,7 @@ Cancellation matters to us. SPEC §7 rule 7 requires clean behavior when a pipel
 
 ## Decision
 
-1. **`provider-mssql` uses `mssql-tds`**, pinned to an exact version (`=0.4.x`). It's hidden behind a small internal client adapter inside the provider crate (connect, execute batch, scalar query, cancel, close), so API changes from upstream releases stay in one file.
+1. **`providers/mssql` uses `mssql-tds`**, pinned to an exact version (`=0.4.x`). It's hidden behind a small internal client adapter inside the provider crate (connect, execute batch, scalar query, cancel, close), so API changes from upstream releases stay in one file.
 2. **Cancellation and statement timeouts use `CancelHandle` / `ExecuteOptions::timeout`.** If cancel settlement fails, the driver retires the connection, and the provider treats that as a failed step (fail closed).
 3. **After any error in a transactional migration, the provider always sends `IF @@TRANCOUNT > 0 ROLLBACK`** before writing the `failed` history row. The spike shows that `XACT_ABORT ON` does **not** roll back on compile errors such as 102, so the transaction would otherwise stay open on the session. This applies whichever driver we use.
 4. **No fallback driver.** `tiberius` / `tiberius-ng` are not kept as an alternative (decided 2026-11-17). If verification finds a problem with `mssql-tds` (Entra on Azure SQL, Linux packaging), we fix it with or upstream to `mssql-tds`, rather than switching drivers. Switching would need a new ADR.
@@ -74,8 +74,8 @@ What this means for the provider:
 - Managed identity and workload identity tokens from `azure_identity` in a pipeline. They use the same wire path as the CLI token, so the risk is low.
 - A Linux build in CI: OpenSSL linking and the native-tls ALPN feature.
 
-The spike code was a throwaway crate outside the workspace. Its scenarios move into the `conformance` suite and the `provider-mssql` integration tests.
+The spike code was a throwaway crate outside the workspace. Its scenarios move into the `conformance` suite and the `providers/mssql` integration tests.
 
 ## Erratum (2026-11-18)
 
-The spike's compile-error statement, `SELECT FROM WHERE`, raises **Msg 156** ("Incorrect syntax near the keyword 'FROM'"), not 102 as the table and decision 3 say. The finding doesn't change: a compile error (level 15) leaves the transaction open under `XACT_ABORT ON`. `provider-mssql`'s integration tests now assert this.
+The spike's compile-error statement, `SELECT FROM WHERE`, raises **Msg 156** ("Incorrect syntax near the keyword 'FROM'"), not 102 as the table and decision 3 say. The finding doesn't change: a compile error (level 15) leaves the transaction open under `XACT_ABORT ON`. `providers/mssql`'s integration tests now assert this.

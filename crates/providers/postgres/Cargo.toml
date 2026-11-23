@@ -16,7 +16,7 @@ workspace = true
 [dependencies]
 async-trait = "0.1.92"
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
-migrate-db-core = { version = "0.1.0", path = "../core" }
+migrate-db-core = { version = "0.1.0", path = "../../core" }
 rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "std", "tls12", "logging"] }
 rustls-native-certs = "0.8.5"
 sha2 = "0.11.1"
@@ -27,6 +27,6 @@ toml = "1.2.1"
 webpki-roots = "1.0.12"
 
 [dev-dependencies]
-migrate-db-conformance = { path = "../conformance" }
+migrate-db-conformance = { path = "../../conformance" }
 tempfile = "3.27.0"
 tokio = { version = "1.54.1", features = ["macros", "rt", "time"] }

@@ -19,7 +19,7 @@ async-trait = "0.1.92"
 azure_core = { version = "1.1.0" }
 azure_identity = { version = "1.0.0", features = ["tokio"] }
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
-migrate-db-core = { version = "0.1.0", path = "../core" }
+migrate-db-core = { version = "0.1.0", path = "../../core" }
 # Pinned exactly: pre-1.0, breaking minor releases; wrapped in src/client.rs (ADR-0004).
 mssql-tds = "=0.4.0"
 thiserror = "2.0.21"
@@ -28,6 +28,6 @@ tokio = { version = "1.54.1", features = ["time"] }
 toml = "1.2.1"
 
 [dev-dependencies]
-migrate-db-conformance = { path = "../conformance" }
+migrate-db-conformance = { path = "../../conformance" }
 tempfile = "3.27.0"
 tokio = { version = "1.54.1", features = ["macros", "rt", "time"] }

@@ -34,11 +34,11 @@ The library API is secondary (SPEC §8).
 
 ```
 crates/core               migrate-db-core       engine, planner, model, config, checksum, runner
-crates/provider-postgres  migrate-db-postgres
-crates/provider-mssql     migrate-db-mssql
-crates/provider-mongo     migrate-db-mongo
-crates/provider-cosmos    migrate-db-cosmos
-crates/provider-memory    in-memory provider for engine tests (not published)
+crates/providers/postgres  migrate-db-postgres
+crates/providers/mssql     migrate-db-mssql
+crates/providers/mongo     migrate-db-mongo
+crates/providers/cosmos    migrate-db-cosmos
+crates/providers/memory    in-memory provider for engine tests (not published)
 crates/conformance        shared provider test suite (dev-dependency)
 crates/cli                migrate-db binary
 ```
