@@ -501,6 +501,7 @@ per stage (dev, qa, prod…; the stage sets MIGRATE_DB_CONNECTION / MIGRATE_DB_A
 
 - `--log-format auto|plain|azure-pipelines|github`. The `auto` default detects the CI system and emits collapsible groups per migration and error annotations: `##vso[task.logissue type=error]` / `::error::`.
 - `--output-file <path>` writes the JSON result to a file so it doesn't mix with logs. It can be published as an artifact.
+- **Update notice.** After a command finishes, if a newer GitHub release exists, one line goes to **stderr** (never stdout, so JSON output is unaffected) with the install command. The lookup uses a 2 s timeout, is cached for 24 h, and fails silently. It never changes the exit code. Disable with `--no-update-check` or `MIGRATE_DB_NO_UPDATE_CHECK=1` (recommended in pipelines that must not reach the internet).
 
 ### 10.6 Agents and environment
 
