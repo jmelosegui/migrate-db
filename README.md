@@ -7,7 +7,7 @@ There is one engine, and each database type plugs in as a provider:
 | Provider | Script format | Executors | Status |
 |---|---|---|---|
 | Microsoft SQL Server / Azure SQL | `.sql` (with `GO` batches) | native; `sqlcmd` opt-in | Working: SQL logins and Entra ID (az login, managed / workload identity); sqlcmd in Phase 3 |
-| PostgreSQL | `.sql` | native | Working (built first to prove the engine); TLS and Entra in Phase 2 |
+| PostgreSQL | `.sql` | native | Working (built first to prove the engine): TLS (rustls, verified certificate and host name); an Entra access token works as the password; the automatic Entra credential chain is in Phase 2 |
 | MongoDB | `.js` (mongosh) or `.yaml` / `.json` (runCommand) | `mongosh` for `.js`; native for YAML/JSON | Planned for Phase 3 |
 | Azure Cosmos DB (NoSQL API) | `.yaml` / `.json` (declarative operations) | native | Planned for Phase 4 |
 
