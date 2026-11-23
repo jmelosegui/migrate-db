@@ -1,0 +1,29 @@
+[package]
+name = "migrate-db-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = "0.1.92"
+chrono = { version = "0.4.45", default-features = false, features = ["serde", "clock", "std"] }
+hex = "0.4.3"
+serde = { version = "1.0.229", features = ["derive"] }
+# Lock-holder record format (SPEC §7 rule 10), shared by every provider.
+serde_json = "1.0.154"
+sha2 = "0.11.1"
+thiserror = "2.0.21"
+# CancelToken (an awaitable flag); already in every binary through the providers.
+tokio = { version = "1.54.1", features = ["macros", "sync"] }
+toml = "1.2.1"
+walkdir = "2.5.0"
+
+[dev-dependencies]
+proptest = "1.12.0"
+tempfile = "3.27.0"
+tokio = { version = "1.54.1", features = ["macros", "rt", "time"] }
