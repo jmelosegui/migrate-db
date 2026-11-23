@@ -39,7 +39,7 @@ irm https://raw.githubusercontent.com/jmelosegui/migrate-db/main/scripts/install
 
 Add `--prerelease` (`-Prerelease` on Windows) to take the newest pre-release. The CLI tells you on stderr when a newer release exists; silence it with `--no-update-check` or `MIGRATE_DB_NO_UPDATE_CHECK=1`. To publish a release, push a `vX.Y.Z` tag.
 
-## Quick taste (target UX)
+## Quick start
 
 One folder holds one database. Its `migrate-db.toml` says what the database is; each run says where to connect, normally through `MIGRATE_DB_*` variables set by the pipeline stage ([ADR-0005](docs/decisions/0005-one-database-per-config-environment-agnostic.md)).
 

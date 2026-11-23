@@ -129,6 +129,7 @@ The primary dev platform is Windows (PowerShell). CI runs on Windows and Linux. 
 - If behavior changes, update `docs/SPEC.md` in the same change.
 - For an architectural or hard-to-reverse decision, add `docs/decisions/NNNN-kebab-title.md` (Status, Context, Decision, Consequences). Don't rewrite accepted ADRs; supersede them with a new one.
 - When a plan item lands, tick it in `docs/PLAN.md`.
+- **Keep `README.md` in sync with the code on every change.** Before committing, check that the provider status table, install steps, quick-start commands and flags still match what the code does (compare with `migrate-db --help` and the PLAN ticks). Fix drift in the same commit.
 
 ## Safety
 
