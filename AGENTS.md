@@ -120,7 +120,7 @@ The primary dev platform is Windows (PowerShell). CI runs on Windows and Linux. 
 - **Remote: `origin` = github.com/jmelosegui/migrate-db (private, added 2026-11-22).** Commit directly to `main`. Push only when the user asks. Branches, PRs and branch policies will be revisited later.
 - **Commit every unit of progress.** Each coherent change (a doc update, a spec section, a feature, a fix) gets its own commit as soon as it's done. Don't let work pile up uncommitted.
 - **No AI attribution.** Never add `Co-authored-by` trailers naming an AI agent, "Generated with" lines or similar credits to commits, PRs, code or docs.
-- GPG signing is **not required**. If signing is configured globally, commit with `git -c commit.gpgsign=false commit …`.
+- **Sign every commit** (GPG, configured globally). Never pass `commit.gpgsign=false`.
 - Use Conventional Commit messages (`docs:`, `feat:`, `fix:`, `test:`, `chore:`, `refactor:`), with an optional scope such as `feat(mssql): …`.
 - Never rewrite published history, force-push or delete branches without the user's explicit approval.
 
