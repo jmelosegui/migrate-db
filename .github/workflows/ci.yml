@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  # mssql-tds needs the Network framework (macOS 10.15+); ignored on other OSes.
+  MACOSX_DEPLOYMENT_TARGET: "11.0"
+
 jobs:
   check:
     strategy:
