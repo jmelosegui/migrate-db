@@ -24,6 +24,10 @@ ureq = { version = "3", default-features = false, features = ["native-tls"] }
 # init: correct TOML string escaping in the generated config.
 toml = "1.2.1"
 
+# Linux release binaries are self-contained: no dependency on the host's libssl version.
+[target.'cfg(target_os = "linux")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+
 [dev-dependencies]
 assert_cmd = "2.2.2"
 predicates = "3.1.4"

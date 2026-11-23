@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, goos: linux, goarch: amd64 }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04, goos: linux, goarch: arm64 }
+          - { target: x86_64-apple-darwin, os: macos-15-intel, goos: darwin, goarch: amd64 }
+          - { target: aarch64-apple-darwin, os: macos-latest, goos: darwin, goarch: arm64 }
+          - { target: x86_64-pc-windows-msvc, os: windows-latest, goos: windows, goarch: amd64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install aarch64 cross toolchain
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+          echo "CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: cargo build --release --locked -p migrate-db --target ${{ matrix.target }}
+
+      - name: Package (unix)
+        if: matrix.goos != 'windows'
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          name="migrate-db_${version}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          mkdir dist
+          cp "target/${{ matrix.target }}/release/migrate-db" dist/
+          cp LICENSE README.md dist/
+          tar -czf "$name.tar.gz" -C dist .
+          mkdir -p out && mv "$name.tar.gz" out/
+
+      - name: Package (windows)
+        if: matrix.goos == 'windows'
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart('v')
+          $name = "migrate-db_${version}_windows_${{ matrix.goarch }}"
+          New-Item -ItemType Directory dist, out | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/migrate-db.exe", LICENSE, README.md dist/
+          Compress-Archive -Path dist/* -DestinationPath "out/$name.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.goos }}-${{ matrix.goarch }}
+          path: out/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: out
+        run: sha256sum *.tar.gz *.zip > checksums.txt
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" --generate-notes $prerelease
